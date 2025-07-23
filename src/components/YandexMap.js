@@ -223,34 +223,6 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                 style={{ width: '100%', height: '500px' }}
             />
 
-            {/* <div className="map-legend">
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#32cd32' }}></span>
-                    Много свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#ff8c00' }}></span>
-                    Мало свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#ff1e1e' }}></span>
-                    Нет свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#808080' }}></span>
-                    Заблокирована
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#1e98ff' }}></span>
-                    Информация недоступна
-                </div>
-                {searchMarker && (
-                    <div className="legend-item">
-                        <span className="legend-color" style={{ backgroundColor: '#ff6b6b' }}></span>
-                        Точка поиска
-                    </div>
-                )}
-            </div> */}
         </div>
     );
 };
