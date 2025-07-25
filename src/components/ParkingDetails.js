@@ -77,7 +77,7 @@ const ParkingDetails = ({ parking, onClose }) => {
                 {parking.distance !== undefined && (
                     <div className="detail-item">
                         <strong> Расстояние:</strong>
-                        <p className="distance-value">{parking.distance.toFixed(2)} км от точки поиска</p>
+                        <p className="distance-value">{Math.round(parking.distance)} м от точки поиска</p>
                     </div>
                 )}
 

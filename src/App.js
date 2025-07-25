@@ -5,7 +5,7 @@ import SearchPanel from './components/SearchPanel';
 import ParkingDetails from './components/ParkingDetails';
 import './App.css';
 
-const API_BASE_URL = 'http://localhost:3487'; // Замените на URL вашего API
+const API_BASE_URL = 'http://localhost:3847'; // URL бэкенд API
 
 function App() {
   const [parkings, setParkings] = useState([]);
@@ -17,106 +17,173 @@ function App() {
   const [viewMode, setViewMode] = useState('map'); // 'map' или 'list'
 
   useEffect(() => {
-    fetchParkings();
+    // Пытаемся получить геолокацию пользователя
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          fetchParkings(userLocation);
+        },
+        (error) => {
+          console.log('Геолокация недоступна, используем координаты центра Москвы');
+          fetchParkings(); // Загружаем с дефолтными координатами
+        }
+      );
+    } else {
+      fetchParkings(); // Загружаем с дефолтными координатами
+    }
   }, []);
 
-const fetchParkings = async () => {
+const fetchParkings = async (userLocation = null) => {
     try {
         setLoading(true);
+        setError(null); // Очищаем предыдущие ошибки
 
-        // Обновленный URL для ручки
-        const response = await axios.get('http://localhost:3847/api/v1/mos_parking/parking');
+        let lat, long;
+        
+        if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+            lat = userLocation.lat;
+            long = userLocation.lng;
+        } else {
+            // Используем координаты центра Москвы по умолчанию
+            lat = 55.7558;
+            long = 37.6176;
+        }
+
+        // Добавляем обязательные query параметры
+        const queryParams = new URLSearchParams({
+            lat: lat.toString(),
+            long: long.toString(),
+            limit: '100',          // Лимит на количество парковок
+            distance: '50000'      // Радиус поиска в метрах (50км)
+        });
+
+        const response = await axios.get(`${API_BASE_URL}/api/v1/mos_parking/parking?${queryParams}`);
+
+        // Проверяем ответ API
+        if (!response.data || !Array.isArray(response.data.parkings)) {
+          throw new Error('Некорректный ответ от API');
+        }
 
         const processedParkings = response.data.parkings.map(parking => ({
-            id: parking._id,
-            name: parking.name?.ru || `Парковка №${parking.zone?.number || parking._id}`,
-            address: `${parking.address?.street?.ru || ''} ${parking.address?.house?.ru || ''}`.trim(),
-            coordinates: parking.center ? {
-                lat: parking.center.coordinates[1],
-                lng: parking.center.coordinates[0]
-            } : null,
-            capacity: parking.spaces?.total || 0,
-            available_spots: parking.spaces?.common || 0,
-            zone_number: parking.zone?.number,
-            subway: parking.subway?.ru,
-            price_info: parking.zone?.description?.ru,
-            category: parking.category?.iconName,
-            blocked: parking.blocked,
+            id: parking.id || Math.random(), // Fallback ID если отсутствует
+            name: parking.parking_name || `Парковка №${parking.parking_number || parking.id || 'без номера'}`,
+            address: `${parking.street || ''} ${parking.house || ''}`.trim() || 'Адрес не указан',
+            coordinates: (parking.latitude && parking.longitude && 
+                         typeof parking.latitude === 'number' && typeof parking.longitude === 'number') ? {
+                lat: parking.latitude,
+                lng: parking.longitude
+            } : null, // Теперь координаты доступны из API
+            capacity: parking.total_spaces || 0,
+            available_spots: parking.total_spaces || 0, // В новом API нет отдельного поля для свободных мест
+            zone_number: parking.parking_number || null,
+            subway: null, // Недоступно в новом API
+            price_info: null, // Недоступно в новом API
+            category: null, // Недоступно в новом API
+            blocked: false, // По умолчанию считаем не заблокированными
+            distance: typeof parking.distance_meters === 'number' ? parking.distance_meters : null, // Расстояние в метрах
             raw: parking
         }));
 
+        console.log('Загружено парковок:', processedParkings.length);
         setParkings(processedParkings);
         setFilteredParkings(processedParkings);
-        setError(null);
     } catch (err) {
-        setError('Ошибка при загрузке данных');
-        console.error('Error fetching parkings:', err);
+        console.error('Ошибка загрузки данных:', err);
+        if (err.response && err.response.status === 500) {
+          setError('Ошибка сервера. Попробуйте позднее.');
+        } else if (err.response && err.response.status === 404) {
+          setError('API недоступно. Проверьте что backend запущен.');
+        } else {
+          setError('Ошибка загрузки данных. Проверьте подключение к интернету и что backend запущен на порту 3847.');
+        }
     } finally {
         setLoading(false);
     }
 };
 
   const handleSearch = async ({ query, filters }) => {
+    console.log('🔍 Поиск:', query, filters);
     setSearching(true);
+    setError(null); // Очищаем предыдущие ошибки
 
     try {
-      let filtered = [...parkings];
+      // Если есть текстовый запрос, делаем поиск по API
+      if (query && query.trim().length > 0) {
+        const searchUrl = `${API_BASE_URL}/api/v1/mos_parking/parking/search?query=${encodeURIComponent(query.trim())}`;
+        console.log('🌐 Поиск по API:', searchUrl);
+        
+        const response = await axios.get(searchUrl);
 
-      // Фильтр по тексту
-      if (query.trim()) {
-        const searchTerm = query.toLowerCase();
-        filtered = filtered.filter(parking =>
-            parking.name.toLowerCase().includes(searchTerm) ||
-            parking.address.toLowerCase().includes(searchTerm) ||
-            (parking.zone_number && parking.zone_number.includes(searchTerm)) ||
-            (parking.subway && parking.subway.toLowerCase().includes(searchTerm))
-        );
-      }
+        // Проверяем ответ API
+        if (!response.data || !Array.isArray(response.data.parkings)) {
+          throw new Error('Некорректный ответ от API поиска');
+        }
 
-      // Фильтр только свободные
-      if (filters.onlyAvailable) {
-        filtered = filtered.filter(parking =>
-            !parking.blocked && parking.available_spots > 0
-        );
-      }
+        const searchedParkings = response.data.parkings.map(parking => ({
+            id: parking.id || Math.random(), // Fallback ID если отсутствует
+            name: parking.parking_name || `Парковка №${parking.parking_number || parking.id || 'без номера'}`,
+            address: `${parking.street || ''} ${parking.house || ''}`.trim() || 'Адрес не указан',
+            coordinates: (parking.latitude && parking.longitude && 
+                         typeof parking.latitude === 'number' && typeof parking.longitude === 'number') ? {
+                lat: parking.latitude,
+                lng: parking.longitude
+            } : null, // Теперь координаты доступны из API
+            capacity: parking.total_spaces || 0,
+            available_spots: parking.total_spaces || 0,
+            zone_number: parking.parking_number || null,
+            subway: null,
+            price_info: null,
+            category: null,
+            blocked: false,
+            distance: typeof parking.distance_meters === 'number' ? parking.distance_meters : null,
+            raw: parking
+          }));
 
-      // Фильтр по расстоянию
-      if (filters.maxDistance && filters.userLocation && parseFloat(filters.maxDistance) > 0) {
-        const maxDistanceKm = parseFloat(filters.maxDistance);
-        filtered = filtered.filter(parking => {
-          if (!parking.coordinates) return false;
+        console.log(`✅ Найдено по запросу "${query}":`, searchedParkings.length);
+        setFilteredParkings(searchedParkings);
+      } else {
+        // Иначе фильтруем локально
+        let filtered = [...(parkings || [])]; // Защита от undefined
 
-          const distance = calculateDistance(
-              filters.userLocation.lat,
-              filters.userLocation.lng,
-              parking.coordinates.lat,
-              parking.coordinates.lng
+        // Фильтр только свободные
+        if (filters && filters.onlyAvailable) {
+          filtered = filtered.filter(parking =>
+              parking && !parking.blocked && parking.available_spots > 0
           );
+        }
 
-          return distance <= maxDistanceKm;
-        });
+        // Фильтр по расстоянию (если есть расстояние от API)
+        if (filters && filters.maxDistance && parseFloat(filters.maxDistance) > 0) {
+          const maxDistanceKm = parseFloat(filters.maxDistance) * 1000; // конвертируем в метры
+          
+          // Используем расстояние из API
+          filtered = filtered.filter(parking => {
+            return parking && parking.distance !== undefined && parking.distance !== null && parking.distance <= maxDistanceKm;
+          });
 
-        // Сортируем по расстоянию
-        filtered.sort((a, b) => {
-          const distanceA = calculateDistance(
-              filters.userLocation.lat,
-              filters.userLocation.lng,
-              a.coordinates.lat,
-              a.coordinates.lng
-          );
-          const distanceB = calculateDistance(
-              filters.userLocation.lat,
-              filters.userLocation.lng,
-              b.coordinates.lat,
-              b.coordinates.lng
-          );
-          return distanceA - distanceB;
-        });
+          // Сортируем по расстоянию (расстояние уже рассчитано на бэкенде)
+          filtered.sort((a, b) => {
+            const distanceA = (a && typeof a.distance === 'number') ? a.distance : Infinity;
+            const distanceB = (b && typeof b.distance === 'number') ? b.distance : Infinity;
+            return distanceA - distanceB;
+          });
+        }
+
+        setFilteredParkings(filtered);
       }
-
-      setFilteredParkings(filtered);
     } catch (err) {
-      console.error('Search error:', err);
+      console.error('❌ Ошибка поиска:', err);
+      if (err.response && err.response.status === 404) {
+        const searchTerm = (query && query.trim()) || 'запросу';
+        setError(`По запросу "${searchTerm}" ничего не найдено. Попробуйте: "охотный", "парковка", "кутузовский"`);
+        setFilteredParkings([]);
+      } else {
+        setError('Ошибка при поиске парковок. Проверьте подключение к интернету.');
+      }
     } finally {
       setSearching(false);
     }
@@ -127,61 +194,75 @@ const fetchParkings = async () => {
     setSelectedParking(null);
   };
 
-  const handleNearbySearch = (clickCoords, radiusKm = 2) => {
+  const handleNearbySearch = async (clickCoords) => {
+    console.log('🎯 Поиск ближайших парковок для координат:', clickCoords);
     setSearching(true);
+    setError(null); // Очищаем предыдущие ошибки
 
     try {
-      // Фильтруем парковки в радиусе от клика
-      const nearby = parkings.filter(parking => {
-        if (!parking.coordinates) return false;
+      // Проверяем корректность координат
+      if (!clickCoords || typeof clickCoords.lat !== 'number' || typeof clickCoords.lng !== 'number') {
+        throw new Error('Некорректные координаты для поиска');
+      }
 
-        const distance = calculateDistance(
-            clickCoords.lat,
-            clickCoords.lng,
-            parking.coordinates.lat,
-            parking.coordinates.lng
-        );
-
-        return distance <= radiusKm;
+      // Делаем запрос к API для поиска парковок в радиусе 200м с лимитом 5
+      const queryParams = new URLSearchParams({
+        lat: clickCoords.lat.toString(),
+        long: clickCoords.lng.toString(),
+        limit: '5',        // Лимит 5 парковок
+        distance: '200'    // Радиус 200 метров (~2-3 минуты пешком)
       });
 
-      // Сортируем по расстоянию
-      nearby.sort((a, b) => {
-        const distanceA = calculateDistance(
-            clickCoords.lat,
-            clickCoords.lng,
-            a.coordinates.lat,
-            a.coordinates.lng
-        );
-        const distanceB = calculateDistance(
-            clickCoords.lat,
-            clickCoords.lng,
-            b.coordinates.lat,
-            b.coordinates.lng
-        );
-        return distanceA - distanceB;
-      });
+      const apiUrl = `${API_BASE_URL}/api/v1/mos_parking/parking?${queryParams}`;
+      console.log('📡 Запрос API:', apiUrl);
+      
+      const response = await axios.get(apiUrl);
 
-      // Добавляем информацию о расстоянии
-      const nearbyWithDistance = nearby.map(parking => ({
-        ...parking,
-        distance: calculateDistance(
-            clickCoords.lat,
-            clickCoords.lng,
-            parking.coordinates.lat,
-            parking.coordinates.lng
-        )
+      // Проверяем ответ API
+      if (!response.data || !Array.isArray(response.data.parkings)) {
+        throw new Error('Некорректный ответ от API');
+      }
+
+      const nearbyParkings = response.data.parkings.map(parking => ({
+        id: parking.id || Math.random(), // Fallback ID если отсутствует
+        name: parking.parking_name || `Парковка №${parking.parking_number || parking.id || 'без номера'}`,
+        address: `${parking.street || ''} ${parking.house || ''}`.trim() || 'Адрес не указан',
+        coordinates: (parking.latitude && parking.longitude && 
+                     typeof parking.latitude === 'number' && typeof parking.longitude === 'number') ? {
+            lat: parking.latitude,
+            lng: parking.longitude
+        } : null, // Теперь координаты доступны из API
+        capacity: parking.total_spaces || 0,
+        available_spots: parking.total_spaces || 0,
+        zone_number: parking.parking_number || null,
+        subway: null,
+        price_info: null,
+        category: null,
+        blocked: false,
+        distance: typeof parking.distance_meters === 'number' ? parking.distance_meters : null, // Расстояние в метрах от точки клика
+        raw: parking
       }));
 
-      setFilteredParkings(nearbyWithDistance);
+      console.log('✅ Найдено парковок:', nearbyParkings.length);
+      setFilteredParkings(nearbyParkings);
 
       // Автоматически выбираем ближайшую парковку
-      if (nearbyWithDistance.length > 0) {
-        setSelectedParking(nearbyWithDistance[0]);
+      if (nearbyParkings.length > 0) {
+        setSelectedParking(nearbyParkings[0]);
+        console.log('🎯 Выбрана ближайшая:', nearbyParkings[0].name);
+      } else {
+        console.log('😞 Парковки не найдены в радиусе 200м');
+        setError('В радиусе 200 метров от выбранной точки парковки не найдены');
       }
 
     } catch (err) {
-      console.error('Nearby search error:', err);
+      console.error('❌ Ошибка поиска ближайших парковок:', err);
+      if (err.response && err.response.status === 404) {
+        setError('В радиусе 200 метров от выбранной точки парковки не найдены');
+        setFilteredParkings([]);
+      } else {
+        setError('Ошибка при поиске ближайших парковок. Проверьте подключение к интернету.');
+      }
     } finally {
       setSearching(false);
     }
@@ -315,20 +396,23 @@ function ParkingList({ parkings, onParkingSelect, selectedParking }) {
                   className={`parking-card ${selectedParking?.id === parking.id ? 'selected' : ''} ${parking.blocked ? 'blocked' : ''}`}
                   onClick={() => onParkingSelect(parking)}
               >
-                {parking.distance !== undefined && (
-                    <div className={`distance-info ${index === 0 ? 'closest' : ''}`}>
-                      {parking.distance.toFixed(1)} км
-                    </div>
-                )}
-
                 <div className="card-header">
-                  <h3>{parking.name}</h3>
-                  {parking.zone_number && (
-                      <span className="zone-badge">Зона {parking.zone_number}</span>
-                  )}
-                  {index === 0 && parking.distance !== undefined && (
-                      <span className="closest-badge">Ближайшая</span>
-                  )}
+                  <div className="title-section">
+                    <h3>{parking.name}</h3>
+                    {parking.zone_number && (
+                        <span className="zone-badge">Зона {parking.zone_number}</span>
+                    )}
+                  </div>
+                  <div className="badges-group">
+                    {parking.distance !== undefined && (
+                        <span className={`distance-badge ${index === 0 ? 'closest' : ''}`}>
+                          {Math.round(parking.distance)} м
+                        </span>
+                    )}
+                    {index === 0 && parking.distance !== undefined && (
+                        <span className="closest-badge">Ближайшая</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="parking-info">

@@ -10,38 +10,14 @@ const SearchPanel = ({ onSearch, onClearSearch, isSearching }) => {
     const [gettingLocation, setGettingLocation] = useState(false);
 
     const handleSearch = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    // Проверяем, передан ли адрес
-    if (searchQuery) {
-        try {
-            // Пример вызова геокодера Yandex
-            const geocoderResponse = await fetch(
-                `https://geocode-maps.yandex.ru/1.x/?apikey=YOUR_YANDEX_API_KEY&format=json&geocode=${searchQuery}`
-            );
-            const geocoderData = await geocoderResponse.json();
-            const geoObject = geocoderData.response.GeoObjectCollection.featureMember[0]?.GeoObject;
-
-            if (geoObject) {
-                const [lng, lat] = geoObject.Point.pos.split(' ').map(Number);
-
-                // Вызываем функцию onSearch с координатами
-                onSearch({
-                    filters: { ...filters, userLocation: { lat, lng } }
-                });
-                return;
-            } else {
-                alert('Не удалось найти указанный адрес. Проверьте правильность ввода.');
-            }
-        } catch (error) {
-            alert('Произошла ошибка при геокодировании адреса.');
-            console.error(error);
-        }
-    } else {
-        // Если адрес не указан, передаем текущие заданные в поисковом фильтре параметры
-        onSearch({ filters, query: searchQuery });
-    }
-};
+        // Передаем текстовый запрос для поиска по названию парковки
+        onSearch({ 
+            query: searchQuery, 
+            filters 
+        });
+    };
 
     const handleClear = () => {
         setSearchQuery('');
