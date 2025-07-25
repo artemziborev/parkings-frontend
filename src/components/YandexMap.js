@@ -93,36 +93,36 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
         }
     };
 
-const updateParkingsOnMap = () => {
-    const map = mapInstanceRef.current;
+    const updateParkingsOnMap = () => {
+        const map = mapInstanceRef.current;
 
-    // Удаляем все объекты из `geoObjects`, кроме маркера поиска
-    map.geoObjects.each((object) => {
-        if (object !== searchMarker) {
-            map.geoObjects.remove(object);
-        }
-    });
-
-    // Создание коллекции для новых парковок
-    const collection = new window.ymaps.GeoObjectCollection();
-    const bounds = [];
-
-    parkings.forEach((parking) => {
-        if (parking.coordinates && parking.coordinates.lat && parking.coordinates.lng) {
-            const coords = [parking.coordinates.lat, parking.coordinates.lng];
-            bounds.push(coords);
-
-            let color = '#1e98ff'; // Цвет по умолчанию
-
-            // Убираем логику, основанную на свободных местах
-            if (parking.blocked) {
-                color = '#808080'; // Серый для заблокированных парковок
+        // Удаляем все объекты из `geoObjects`, кроме маркера поиска
+        map.geoObjects.each((object) => {
+            if (object !== searchMarker) {
+                map.geoObjects.remove(object);
             }
+        });
 
-            // Создаем метку
-            const placemark = new window.ymaps.Placemark(coords, {
-                balloonContentHeader: parking.name || 'Парковка',
-                balloonContentBody: `
+        // Создание коллекции для новых парковок
+        const collection = new window.ymaps.GeoObjectCollection();
+        const bounds = [];
+
+        parkings.forEach((parking) => {
+            if (parking.coordinates && parking.coordinates.lat && parking.coordinates.lng) {
+                const coords = [parking.coordinates.lat, parking.coordinates.lng];
+                bounds.push(coords);
+
+                let color = '#1e98ff'; // Цвет по умолчанию
+
+                // Убираем логику, основанную на свободных местах
+                if (parking.blocked) {
+                    color = '#808080'; // Серый для заблокированных парковок
+                }
+
+                // Создаем метку
+                const placemark = new window.ymaps.Placemark(coords, {
+                    balloonContentHeader: parking.name || 'Парковка',
+                    balloonContentBody: `
         <div>
             <p><strong>Адрес:</strong> ${parking.address || 'Не указан'}</p>
             ${parking.subway ? `<p><strong>Метро:</strong> ${parking.subway}</p>` : ''}
@@ -130,7 +130,7 @@ const updateParkingsOnMap = () => {
             ${parking.blocked ? '<p style="color: red;"><strong>⚠️ Заблокирована</strong></p>' : ''}
         </div>
     `,
-                balloonContentFooter: `
+                    balloonContentFooter: `
         <button onclick="window.selectParking('${parking.id}')" 
                 style="margin-right: 8px; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
             Выбрать
@@ -140,41 +140,41 @@ const updateParkingsOnMap = () => {
             Маршрут
         </button>
     `
-            }, {
-                preset: 'islands#circleIcon',
-                // Здесь убрано использование 'available'
-                iconCaption: parking.blocked ? '🚫' : ''
-            });
+                }, {
+                    preset: 'islands#circleIcon',
+                    // Здесь убрано использование 'available'
+                    iconCaption: parking.blocked ? '🚫' : ''
+                });
 
-            // Выделение выбранной парковки
-            if (selectedParking && selectedParking.id === parking.id) {
-                placemark.options.set('iconColor', '#ff1493'); // Розовый для выбранной
-                placemark.options.set('iconCaption', '★');
-            }
+                // Выделение выбранной парковки
+                if (selectedParking && selectedParking.id === parking.id) {
+                    placemark.options.set('iconColor', '#ff1493'); // Розовый для выбранной
+                    placemark.options.set('iconCaption', '★');
+                }
 
-            // Добавление события клика на метку
-            placemark.events.add('click', () => {
-                onParkingSelect && onParkingSelect(parking);
-            });
+                // Добавление события клика на метку
+                placemark.events.add('click', () => {
+                    onParkingSelect && onParkingSelect(parking);
+                });
 
-            collection.add(placemark);
-        }
-    });
-
-    map.geoObjects.add(collection);
-
-    // Установка границ карты по всем меткам (если отсутствует маркер поиска)
-    if (bounds.length > 0 && !searchMarker) {
-        map.setBounds(bounds, {
-            checkZoomRange: true,
-            zoomMargin: 30
-        }).then(() => {
-            if (map.getZoom() > 16) {
-                map.setZoom(16);
+                collection.add(placemark);
             }
         });
-    }
-};
+
+        map.geoObjects.add(collection);
+
+        // Установка границ карты по всем меткам (если отсутствует маркер поиска)
+        if (bounds.length > 0 && !searchMarker) {
+            map.setBounds(bounds, {
+                checkZoomRange: true,
+                zoomMargin: 30
+            }).then(() => {
+                if (map.getZoom() > 16) {
+                    map.setZoom(16);
+                }
+            });
+        }
+    };
 
     // Глобальные функции для кнопок в балунах
     useEffect(() => {
@@ -223,34 +223,6 @@ const updateParkingsOnMap = () => {
                 style={{ width: '100%', height: '500px' }}
             />
 
-            <div className="map-legend">
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#32cd32' }}></span>
-                    Много свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#ff8c00' }}></span>
-                    Мало свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#ff1e1e' }}></span>
-                    Нет свободных мест
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#808080' }}></span>
-                    Заблокирована
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color" style={{ backgroundColor: '#1e98ff' }}></span>
-                    Информация недоступна
-                </div>
-                {searchMarker && (
-                    <div className="legend-item">
-                        <span className="legend-color" style={{ backgroundColor: '#ff6b6b' }}></span>
-                        Точка поиска
-                    </div>
-                )}
-            </div>
         </div>
     );
 };

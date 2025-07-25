@@ -217,6 +217,11 @@ const fetchParkings = async () => {
   return (
       <div className="App">
         <header className="App-header">
+          <img
+            src="/maskot.png"
+            alt="Maskot"
+            className="header-maskot"
+          />
           <h1>Поиск парковок в Москве</h1>
           <div className="view-toggle">
             <button

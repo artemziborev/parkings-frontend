@@ -12,15 +12,55 @@
   text-align: center;
   margin-bottom: 30px;
   background: white;
-  padding: 20px;
+  padding: 20px 20px 20px 140px;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  min-height: 120px;
 }
 
 .App-header h1 {
   color: #333;
   margin: 0 0 15px 0;
   font-size: 2.2rem;
+}
+
+.header-maskot {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60px;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .header-maskot {
+    display: none;
+  }
+
+  .App-header {
+    padding: 20px;
+  }
+}
+
+.header-maskot {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 130px;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .header-maskot {
+    display: none;
+  }
+
+  .App-header {
+    padding: 20px;
+  }
 }
 
 /* Переключатель видов */
@@ -92,7 +132,9 @@
   border-color: #007bff;
 }
 
-.search-btn, .clear-btn, .location-btn {
+.search-btn,
+.clear-btn,
+.location-btn {
   padding: 12px 18px;
   border: none;
   border-radius: 8px;
@@ -239,8 +281,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error {
@@ -330,9 +377,17 @@
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3); }
-  50% { box-shadow: 0 5px 20px rgba(220, 53, 69, 0.6); }
-  100% { box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3); }
+  0% {
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 5px 20px rgba(220, 53, 69, 0.6);
+  }
+
+  100% {
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+  }
 }
 
 .nearby-hint {
@@ -467,8 +522,13 @@
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
-  to { box-shadow: 0 0 15px rgba(40, 167, 69, 0.8); }
+  from {
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+  }
+
+  to {
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+  }
 }
 
 .distance-info {
@@ -754,7 +814,8 @@
     align-items: flex-start;
   }
 
-  .zone-badge, .closest-badge {
+  .zone-badge,
+  .closest-badge {
     margin-top: 10px;
   }
 
@@ -811,7 +872,9 @@
   box-sizing: border-box;
 }
 
-button, input, .parking-card {
+button,
+input,
+.parking-card {
   transition: all 0.2s ease;
 }
 
