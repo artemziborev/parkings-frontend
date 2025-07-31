@@ -406,6 +406,20 @@
   cursor: crosshair !important;
 }
 
+/* Fix for Yandex Map container */
+.ymaps-2-1-79-map {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.map-section {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
 .map-legend {
   position: absolute;
   top: 15px;
@@ -493,7 +507,7 @@
 
 .title-section {
   flex: 1;
-  min-width: 0; /* Позволяет сжиматься */
+  min-width: 0;
 }
 
 .title-section h3 {
@@ -516,7 +530,7 @@
 
 .badges-group {
   display: flex;
-  flex-direction: row; /* В строку */
+  flex-direction: row;
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
@@ -894,16 +908,16 @@
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .badges-group {
     align-self: flex-end;
   }
-  
+
   .parking-grid {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .parking-card {
     padding: 15px;
   }

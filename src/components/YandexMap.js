@@ -16,7 +16,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
         }
 
         console.log('✅ Yandex Maps API загружен, версия:', window.ymaps.version);
-        
+
         // Инициализация карты
         if (window.ymaps && !mapInstanceRef.current) {
             window.ymaps.ready(() => {
@@ -93,12 +93,12 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
         try {
             // В Yandex Maps coords приходят в формате [lat, lng]
             const [latitude, longitude] = coords;
-            
+
             if (typeof latitude !== 'number' || typeof longitude !== 'number') {
                 console.error('Некорректные координаты:', coords);
                 return;
             }
-            
+
             console.log('🗺️ Клик по карте:', { latitude, longitude });
 
             // Добавляем маркер места поиска (координаты в формате Yandex: [lat, lng])
@@ -123,7 +123,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                 console.error('Невозможно добавить маркер: некорректные данные');
                 return;
             }
-            
+
             console.log('🔴 Создаем маркер на координатах:', coords);
 
             // Удаляем предыдущий маркер поиска
@@ -163,7 +163,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
         try {
             // ИСПРАВЛЕНИЕ: Принудительно обновляем размеры карты
             map.container.fitToViewport();
-            
+
             // Ждем немного чтобы размеры обновились
             setTimeout(() => {
                 try {
@@ -182,7 +182,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                     });
 
                     // Проверяем что координаты адекватные
-                    if (pixelCoords[0] < 0 || pixelCoords[0] > mapRect.width || 
+                    if (pixelCoords[0] < 0 || pixelCoords[0] > mapRect.width ||
                         pixelCoords[1] < 0 || pixelCoords[1] > mapRect.height) {
                         console.warn('⚠️ Координаты балуна за пределами карты:', pixelCoords);
                         // Центрируем балун если координаты неадекватные
@@ -200,9 +200,9 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                     };
 
                     console.log('💾 Данные балуна:', balloonData);
-                    
+
                     setCustomBalloon(balloonData);
-                    
+
                     // Проверяем что состояние обновилось
                     setTimeout(() => {
                         console.log('⏱️ Проверка состояния балуна через 100мс...');
@@ -240,7 +240,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
 
             // Очищаем предыдущие маркеры парковок
             map.geoObjects.removeAll();
-            
+
             // Возвращаем маркер поиска если он был
             if (searchMarker) {
                 map.geoObjects.add(searchMarker);
@@ -256,8 +256,8 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
 
             parkings.forEach((parking, index) => {
                 try {
-                    if (!parking.coordinates || 
-                        typeof parking.coordinates.lat !== 'number' || 
+                    if (!parking.coordinates ||
+                        typeof parking.coordinates.lat !== 'number' ||
                         typeof parking.coordinates.lng !== 'number') {
                         console.warn('Пропускаем парковку без корректных координат:', parking.id);
                         return;
@@ -280,13 +280,13 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                     // Событие клика - показываем кастомный балун
                     placemark.events.add('click', function (e) {
                         console.log('🎯 Клик по маркеру:', parking.name);
-                        
+
                         // Останавливаем всплытие события
                         e.preventDefault();
-                        
+
                         // Показываем кастомный балун
                         showCustomBalloon(parking, coords);
-                        
+
                         // Выбираем парковку
                         if (onParkingSelect && typeof onParkingSelect === 'function') {
                             onParkingSelect(parking);
@@ -336,8 +336,8 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                 try {
                     console.log('🗺️ Создание маршрута к парковке с ID:', parkingId);
                     const parking = parkings.find(p => p.id === parkingId);
-                    if (parking && parking.coordinates && 
-                        typeof parking.coordinates.lat === 'number' && 
+                    if (parking && parking.coordinates &&
+                        typeof parking.coordinates.lat === 'number' &&
                         typeof parking.coordinates.lng === 'number') {
                         const url = `https://yandex.ru/maps/?rtext=~${parking.coordinates.lat},${parking.coordinates.lng}&rtt=auto`;
                         window.open(url, '_blank');
@@ -403,7 +403,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
 
             {/* Кастомный балун */}
             {customBalloon && (
-                <div 
+                <div
                     className="custom-balloon"
                     style={{
                         position: 'absolute',
@@ -425,20 +425,20 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                         console.log('🖱️ Клик по балуну');
                     }}
                 >
-                    {/* Отладочная информация */}
-                    <div style={{ 
-                        position: 'absolute', 
-                        top: '-25px', 
-                        left: '0', 
-                        background: 'yellow', 
-                        padding: '2px 6px', 
+                    {/* Отладочная информация
+                    <div style={{
+                        position: 'absolute',
+                        top: '-25px',
+                        left: '0',
+                        background: 'yellow',
+                        padding: '2px 6px',
                         fontSize: '10px',
                         borderRadius: '3px'
                     }}>
                         DEBUG: x={Math.round(customBalloon.x)}, y={Math.round(customBalloon.y)}
-                    </div>
-                    
-                    <button 
+                    </div> */}
+
+                    <button
                         onClick={(e) => {
                             e.stopPropagation();
                             console.log('❌ Закрываем балун');
@@ -463,36 +463,36 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                     >
                         ×
                     </button>
-                    
-                    <h4 style={{ 
-                        margin: '0 0 12px 0', 
-                        color: '#333', 
+
+                    <h4 style={{
+                        margin: '0 0 12px 0',
+                        color: '#333',
                         fontSize: '16px',
                         fontWeight: 'bold'
                     }}>
                         {customBalloon.parking.name || 'Парковка'}
                     </h4>
-                    
+
                     {customBalloon.parking.address && (
                         <p style={{ margin: '8px 0', color: '#666', lineHeight: '1.4' }}>
                             <strong>📍 Адрес:</strong> {customBalloon.parking.address}
                         </p>
                     )}
-                    
+
                     {customBalloon.parking.capacity > 0 && (
                         <p style={{ margin: '8px 0', color: '#666', lineHeight: '1.4' }}>
                             <strong>🚗 Мест:</strong> {customBalloon.parking.available_spots}/{customBalloon.parking.capacity}
                         </p>
                     )}
-                    
+
                     {customBalloon.parking.distance !== undefined && customBalloon.parking.distance !== null && (
                         <p style={{ margin: '8px 0', color: '#666', lineHeight: '1.4' }}>
                             <strong>📏 Расстояние:</strong> {Math.round(customBalloon.parking.distance)} м
                         </p>
                     )}
-                    
+
                     <div style={{ marginTop: '15px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button 
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 console.log('✅ Выбираем парковку:', customBalloon.parking.name);
@@ -514,7 +514,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                         >
                             Выбрать
                         </button>
-                        <button 
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 console.log('🗺️ Открываем маршрут к:', customBalloon.parking.name);
@@ -535,7 +535,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                             Маршрут
                         </button>
                     </div>
-                    
+
                     {/* Указательная стрелка */}
                     <div style={{
                         position: 'absolute',
@@ -551,7 +551,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                 </div>
             )}
 
-            {/* Отладочная информация о состоянии */}
+            {/* Отладочная информация о состоянии
             {customBalloon && (
                 <div style={{
                     position: 'absolute',
@@ -570,7 +570,7 @@ const YandexMap = ({ parkings, onParkingSelect, selectedParking, onNearbySearch 
                     X: {Math.round(customBalloon.x)} Y: {Math.round(customBalloon.y)}<br/>
                     {new Date().toLocaleTimeString()}
                 </div>
-            )}
+            )} */}
         </div>
     );
 };
